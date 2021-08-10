@@ -1,11 +1,10 @@
 /*------------------------------------------------------------------------------
 
-Proyecto: 									Cierre de brecha de administrativos
-Autor: 										Hugo Fernandez y Carlos Ramirez 
-											UPP-Minedu
-Ultima fecha de modificación:				01/07/2020
-Outputs:									Calculo de la brecha del personal 
-											administrativo y su costo
+Proyecto: 									Brecha de administrativos
+Autor: 										Hugo Fernandez - Carlos Ramirez 
+											UPP
+Ultima fecha de modificación:				10/08/2021
+Outputs:									Brecha de administrativos
 											
 ------------------------------------------------------------------------------*/
 
@@ -13,9 +12,9 @@ clear all
 set more off
 
 *Set paths
-global work "D:\G drive\Investigación\Minedu\Brecha de administrativos"
-global data "D:\G drive\Bases de datos\Minedu"
+global work "D:\Brecha-no-docente"
 cd "$work"
+global data "D:\OneDrive\Bases de datos\Minedu compartido"
 
 use "Resultados\Base administrativos", clear
 drop aux_* edad_aux* // Dropero todos los auxilares porque no fueron aprobados por UPP
@@ -50,12 +49,12 @@ Personal requerido:
 	gen opt_coord_adm_ie = 1 if clas_digc==3 
 	
 *2.2) Oficinista
-	gen opt_oficinista = 1 if clas_digc==3 & cant_alum_2020>=450
+	gen opt_oficinista = 1 if clas_digc==3 & cant_total_2021>=450
 	
 *2.3) Personal de limpieza y mantenimiento	
-	gen opt_pers_limp_mant = ceil(cant_alum_2020/226) if clas_digc==3  
+	gen opt_pers_limp_mant = ceil(cant_total_2021/226) if clas_digc==3  
 	replace opt_pers_limp_mant = 16 if clas_digc==3 & opt_pers_limp_mant > 16
-	table opt_pers_limp_mant , c(min cant_alum_2020  max cant_alum_2020)
+	table opt_pers_limp_mant , c(min cant_total_2021  max cant_total_2021)
 	
 *2.4) Personal de vigilancia
 	gen opt_pers_vigilancia = turno if clas_digc==3
@@ -78,21 +77,21 @@ Personal requerido:
 	replace opt_coord_adm_ie = 1 if clas_digc==4 
 
 *3.2) Oficinista
-	replace opt_oficinista = ceil(cant_alum_2020/450) if clas_digc==4 
+	replace opt_oficinista = ceil(cant_total_2021/450) if clas_digc==4 
 	replace opt_oficinista = 3 if clas_digc==4 & opt_oficinista > 3
 	
 *3.3) Secretario
-	gen opt_secretario = 1 if clas_digc==4 & cant_alum_2020 > 1050
+	gen opt_secretario = 1 if clas_digc==4 & cant_total_2021 > 1050
 	
 *3.4) Personal de limpieza y mantenimiento
-	replace opt_pers_limp_mant = ceil(cant_alum_2020/226) if clas_digc==4  
+	replace opt_pers_limp_mant = ceil(cant_total_2021/226) if clas_digc==4  
 	replace opt_pers_limp_mant = 16 if clas_digc==4 & opt_pers_limp_mant > 16
-	table opt_pers_limp_mant , c(min cant_alum_2020  max cant_alum_2020)
+	table opt_pers_limp_mant , c(min cant_total_2021  max cant_total_2021)
 		
 *3.5) Personal de vigilancia
 	replace opt_pers_vigilancia = turno if clas_digc==4
 	replace opt_pers_vigilancia = opt_pers_vigilancia + 1 if inicial!=0 & clas_digc==4 
-	
+exit
 /*------------------------------------------------------------------------------
 					IV) Locales con equipamiento
 ------------------------------------------------------------------------------*/
@@ -127,7 +126,7 @@ foreach x in coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario /
 }
 drop gestion d_gestion ges_dep d_ges_dep  talumno tseccion
 
-order codlocal nombreooii d_dpto d_prov d_dist ubigeo region pliego codue unidadejecutora nombentidad codooii tipo_entidad clas_digc clas_digc cant_alum_2020 - cant_pc biblio_op laboratorio turno caso_covid integracion edad* rural_upp_2020 //Datos generales
+order codlocal nombreooii d_dpto d_prov d_dist ubigeo region pliego codue unidadejecutora nombentidad codooii tipo_entidad clas_digc clas_digc cant_total_2021 - cant_pc biblio_op laboratorio turno caso_covid integracion edad* rural_upp_2020 //Datos generales
 
 order coord_adm_ie_n oficinista_n pers_limp_mant_n pers_vigilancia_n secretario_n /*aux_biblioteca_n aux_laboratorio_n aux_sistemas_n*/, after(rural_upp_2020) //Datos de personal actual nombrado
 
@@ -197,7 +196,7 @@ g mediana = clas_digc==3
 g grande = clas_digc==4
 
 local pea_adm "coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario"
-collapse (sum) mediana grande cant_alum_2020 coord_adm_ie* oficinista* pers_limp_mant* pers_vigilancia* secretario* exd_* req_* costo_brecha_* (mean) edad*, by(region nombreooii)
+collapse (sum) mediana grande cant_total_2021 coord_adm_ie* oficinista* pers_limp_mant* pers_vigilancia* secretario* exd_* req_* costo_brecha_* (mean) edad*, by(region nombreooii)
 
 foreach x of local pea_adm {
 	*Anios para jubilarse de un nombrado	
@@ -212,7 +211,7 @@ foreach x of local pea_adm {
 		
 }
 
-collapse (rawsum) mediana grande cant_alum_2020 coord_adm_ie* oficinista* pers_limp_mant* pers_vigilancia* secretario* exd_* req_* brecha_* costo_brecha_* (mean) jubilacion_*, by(region)
+collapse (rawsum) mediana grande cant_total_2021 coord_adm_ie* oficinista* pers_limp_mant* pers_vigilancia* secretario* exd_* req_* brecha_* costo_brecha_* (mean) jubilacion_*, by(region)
 
 *Anado DS 238
 
@@ -259,9 +258,9 @@ foreach x of local pea_adm {
 foreach x of local pea_adm {
 	
 	preserve
-		order region mediana grande cant_alum_2020 jubilacion_`x' `x'_n `x'_c `x' exd_`x'_n exd_`x'_c exd_`x' req_`x' brecha_`x' costo_unit_`x' costo_brecha_`x' ds238_`x' costo_ds_`x' brecha_ds_`x' costo_brecha_ds_`x'
+		order region mediana grande cant_total_2021 jubilacion_`x' `x'_n `x'_c `x' exd_`x'_n exd_`x'_c exd_`x' req_`x' brecha_`x' costo_unit_`x' costo_brecha_`x' ds238_`x' costo_ds_`x' brecha_ds_`x' costo_brecha_ds_`x'
 		
-		keep region mediana grande cant_alum_2020 jubilacion_`x' `x'_n `x'_c `x' exd_`x'_n exd_`x'_c exd_`x' req_`x' brecha_`x' costo_unit_`x' costo_brecha_`x' ds238_`x' costo_ds_`x' brecha_ds_`x' costo_brecha_ds_`x' 
+		keep region mediana grande cant_total_2021 jubilacion_`x' `x'_n `x'_c `x' exd_`x'_n exd_`x'_c exd_`x' req_`x' brecha_`x' costo_unit_`x' costo_brecha_`x' ds238_`x' costo_ds_`x' brecha_ds_`x' costo_brecha_ds_`x' 
 		
 		export excel using "Brecha adm con movimiento.xlsx", sheet("`x'", modify) cell(A3) first(variable)
 	restore
