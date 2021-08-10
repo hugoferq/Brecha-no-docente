@@ -1,0 +1,331 @@
+/*------------------------------------------------------------------------------
+
+Proyecto: 									Brecha de administrativos
+Autor: 										Hugo Fernandez - Carlos Ramirez 
+											UPP
+Ultima fecha de modificación:				09/08/2021
+Outputs:									Base de datos a analizar
+											
+------------------------------------------------------------------------------*/
+
+clear all
+set more off
+
+*Set paths
+global work "D:\Brecha-no-docente"
+cd "$work"
+global data "D:\OneDrive\Bases de datos\Minedu compartido"
+cap mkdir "Resultados"
+
+*Programs
+program plazaunica
+
+ ** Identificación de la plaza original y sus espejo **
+		
+ 		gen prior_tipo = 1
+		replace prior_tipo = 2 if tiporegistro == "EVENTUAL"
+		replace prior_tipo = 3 if tiporegistro == "PROYECTO"
+		replace prior_tipo = 4 if tiporegistro == "CUADRO DE HORAS"
+		replace prior_tipo = 5 if tiporegistro == "REEMPLAZO"
+		
+	 	gen prior_sitlab = 1
+		replace prior_sitlab = 2 if sitlab == "F" | sitlab == "D" | sitlab == "E"  | sitlab == "T"
+		replace prior_sitlab = 3 if sitlab == "C" | sitlab == "V"
+		
+		gen soplaza = !strpos(estplaza,"SG") & !strpos(estplaza,"CG") & !strpos(estplaza,"ABAND") //toma valor 1 si la plaza no tiene licencia sin goce, con goce o es una plaza abandonada 
+		gen sestpla = estplaza == "ACTIV" //toma valor 1 si es activo
+		hashsort -jornlab, gen(sjornlb) //ordenamiento ascendente
+		gen socupp = mi(numdocum) //toma valor 1 si tiene dni 
+		
+		*Priorización de plazas activas con personal
+		
+		duplicates tag descreg nombreooii codmod codplaza, g(dupli)
+		
+		bys descreg nombreooii codmod codplaza (prior_tipo - socupp): gen tipo_fin = _n  
+       
+		label define tipo_fin 1"Plaza original" 2"Plaza espejo 1" 3"Plaza espejo 2" 4"Plaza espejo 3" 5"Plaza espejo 4"
+		label values tipo_fin tipo_fin		
+		
+tab tipo_fin dupli
+	keep if tipo_fin==1
+tab tipo_fin dupli
+
+end
+
+/*------------------------------------------------------------------------------
+							I) Censo Educativo
+--------------------------------------------------------------------------------
+
+Utilizar Censo Escolar para obtener información de condiciones para 
+requerimiento de auxiliares.
+
+La pregunta p400_31 indica el tipo de espacio educativo complementario 
+	- 1. Didactico 
+	- 39. Laboratorio CTA/ 
+	- 42. Biblioteca
+cantidad de computadoras
+
+------------------------------------------------------------------------------*/
+
+use "$censo2019\recursos_2019", clear
+keep if cuadro == "C504" & (tipdato == "02" | tipdato == "03" | tipdato == "04") & chk2 == "1"  
+clonevar cant_pc = dato02
+collapse (rawsum) cant_pc, by(cod_mod anexo)
+count //11,184
+tempfile pc
+save `pc'
+
+use "$censo2019/local_lineal_2019.dta", clear
+count //67,275
+tab p607 //¿La biblioteca está funcionando?
+gen 	biblio_op = 0 
+replace biblio_op = 1 if p607=="1"
+
+gen 	laboratorio = 0 
+replace laboratorio = 1 if p603=="1"
+
+keep codlocal biblio_op laboratorio 
+tempfile bl
+save `bl'
+
+/*------------------------------------------------------------------------------
+								II) Nexus
+--------------------------------------------------------------------------------
+
+Verifico la cantidad de administrativos.
+Las categorias fueron definidas por DIGC-Minedu
+
+------------------------------------------------------------------------------*/
+
+use "$nexus\nexus_49sira", clear
+
+drop if sitlab == "P" | sitlab == "B" | sitlab == "X" | tiporegistro== "REEMPLAZO" | strpos(estplaza,"BLOQ")
+plazaunica
+
+*Psicologo
+gen plaza_administrativa = 1 if descargo=="ASISTENTE SOCIAL" | descargo=="ASISTENTE SOCIAL I" | descargo=="ASISTENTE SOCIAL II" | descargo=="PSICOLOGO" | descargo=="PSICOLOGO (ADM)" | descargo=="PSICOLOGO I"
+gen psicologo=plaza_administrativa==1
+gen psicologo_n=1==(psicologo==1 & sitlab == "N")
+gen psicologo_c=1==psicologo_n==0 & plaza_administrativa==1
+
+*Coordinador administrativo de IE
+tokenize `""ESPECIALISTA ADMINISTRATIVO" "CONTADOR" "ESPECIALISTA ADMINISTRATIVO I" "ESPECIALISTA ADMINISTRATIVO II" "ESPECIALISTA ADMINISTRATIVO III" "TECNICO EN FINANZAS" "JEFE DE AREA ADMINISTRATIVA" "TECNICO EN CONTABILIDAD" "TECNICO EN CONTABILIDAD I" "TECNICO ADMINISTRATIVO II" "TECNICO ADMINISTRATIVO III" "TECNICO ADMINISTRATIVO I" "TECNICO ADMINISTRATIVO" "TESORERO" "TECNICO EN PERSONAL II" "DIRECTOR DE SISTEMA ADMINISTRATIVO II" "SUB DIRECTOR DE SISTEMA ADMINISTRATIVO" "SUB DIRECTOR DE AREA ADMINISTRATIVA" "ESPECIALISTA EN FINANZAS" "TECNICO EN CAPACITACION Y DIFUSION" "TESORERO I" "TECNICO EN PERSONAL I" "TECNICO EN ABASTECIMIENTO" "TECNICO EN ABASTECIMIENTO II" "CONTADOR II" "CAJERO" "COORDINADOR ADMINISTRATIVO Y DE RECURSOS EDUCATIVOS PARA ZONAS RURALES" "COORDINADOR ADMINISTRATIVO Y DE RECURSOS EDUCATIVOS PARA ZONAS URBANAS" "RELACIONISTA PUBLICO I""'
+foreach x of numlist 1(1)29 {	
+	replace plaza_administrativa = 2 if descargo == "``x''" & mi(plaza_administrativa)	
+}
+ 
+gen coord_adm_ie=plaza_administrativa==2
+gen coord_adm_ie_n=1==(coord_adm_ie==1 & sitlab == "N")
+gen coord_adm_ie_c=coord_adm_ie_n==0 & plaza_administrativa==2
+
+*Secretario(a)
+tokenize `""PERSONAL DE SECRETARIA" "SECRETARIA" "SECRETARIA I" "SECRETARIA II" "SECRETARIA III" "SECRETARIA IV""'
+foreach x of numlist 1(1)6 {	
+	replace plaza_administrativa = 3 if descargo == "``x''" & mi(plaza_administrativa)	
+}
+gen secretario=plaza_administrativa==3
+gen secretario_n=1==(secretario==1 & sitlab == "N")
+gen secretario_c=secretario_n==0 & plaza_administrativa==3
+
+*Auxiliar de biblioteca
+tokenize `""AUXILIAR DE BIBLIOTECA" "AUXILIAR DE BIBLIOTECA I" "AUXILIAR DE BIBLIOTECA II" "BIBLIOTECARIO" "BIBLIOTECARIO I" "TECNICO EN BIBLIOTECA" "TECNICO EN BIBLIOTECA I" "TECNICO EN BIBLIOTECA II" "TECNICO EN BIBLIOTECA III" "TECNICO EN IMPRESIONES" "TECNICO EN IMPRESIONES I" "AUXILIAR DE VIDEOTECA""'
+foreach x of numlist 1(1)12 {
+	replace plaza_administrativa = 4 if descargo == "``x''" & mi(plaza_administrativa)
+}
+gen aux_biblioteca=plaza_administrativa==4
+gen aux_biblioteca_n=1==(aux_biblioteca==1 & sitlab == "N") 
+gen aux_biblioteca_c=aux_biblioteca_n==0 & plaza_administrativa==4
+
+*Auxiliar de laboratorio
+tokenize `""TECNICO EN LABORATORIO" "TECNICO EN LABORATORIO I" "TECNICO EN LABORATORIO II" "TECNICO EN LABORATORIO III" "AUXILIAR DE LABORATORIO" "AUXILIAR DE LABORATORIO I" "AUXILIAR DE LABORATORIO II""'
+foreach x of numlist 1(1)7 {
+	replace plaza_administrativa = 5 if descargo == "``x''" & mi(plaza_administrativa)
+}
+gen aux_laboratorio=plaza_administrativa==5
+gen aux_laboratorio_n=1==(aux_laboratorio==1 & sitlab == "N")
+gen aux_laboratorio_c=aux_laboratorio_n==0 & plaza_administrativa==5
+
+*Auxiliar de soporte informático
+tokenize `""COORDINADOR DE INNOVACION Y SOPORTE TECNOLOGICO" "OPERADOR DE EQUIPO DE IMPRENTA" "PROGRAMADOR DE SISTEMAS PAD" "ANALISTA DE SISTEMAS PAD" "OPERADOR PAD" "OPERADOR PAD I" "OPERADOR PAD II" "OPERADOR PAD III""'
+foreach x of numlist 1(1)8 {
+	replace plaza_administrativa = 6 if descargo == "``x''" & mi(plaza_administrativa)
+} 
+gen aux_sistemas=plaza_administrativa==6
+gen aux_sistemas_n=1==(aux_sistemas==1 & sitlab == "N")
+gen aux_sistemas_c=aux_sistemas_n==0 & plaza_administrativa==6
+
+*Oficinista
+tokenize `""AUXILIAR DE CONTABILIDAD" "AUXILIAR DE CONTABILIDAD II" "AUXILIAR DE OFICINA" "AUXILIAR DE OFICINA II" "AUXILIAR DE PUBLICACIONES" "AUXILIAR DE PUBLICACIONES II" "AUXILIAR DE SECRETARIA" "AUXILIAR DE SISTEMA ADMINISTRATIVO" "AUXILIAR DE SISTEMA ADMINISTRATIVO I" "OFICINISTA" "OFICINISTA I" "OFICINISTA II" "OFICINISTA III" "ASISTENTE DE SISTEMA ADMINISTRATIVO I""'
+foreach x of numlist 1(1)14 {
+	replace plaza_administrativa = 7 if descargo == "``x''" & mi(plaza_administrativa)
+}
+gen oficinista=plaza_administrativa==7
+gen oficinista_n=1==(oficinista==1 & sitlab == "N")
+gen oficinista_c=oficinista_n==0 & plaza_administrativa==7
+
+*Trabajador de limpieza y mantenimiento
+tokenize `""TRABAJADOR DE SERVICIO" "TRABAJADOR DE SERVICIO I" "TRABAJADOR DE SERVICIO II" "TRABAJADOR DE SERVICIO III" "ARTESANO" "ARTESANO III" "SUPERVISOR DE CONSERVACION Y SERVICIOS" "SUPERVISOR DE CONSERVACION Y SERVICIOS I" "SUPERVISOR DE CONSERVACION Y SERVICIOS II" "PERSONAL DE MANTENIMIENTO" "ARTESANO I" "ARTESANO II" "ELECTRICISTA""'
+foreach x of numlist 1(1)13 {
+	replace plaza_administrativa = 8 if descargo == "``x''" & mi(plaza_administrativa)
+} 
+gen pers_limp_mant=plaza_administrativa==8
+gen pers_limp_mant_n=1==(pers_limp_mant==1 & sitlab == "N")
+gen pers_limp_mant_c=pers_limp_mant_n==0 & plaza_administrativa==8
+
+*Personal de vigilancia
+replace plaza_administrativa = 9 if descargo=="PERSONAL DE VIGILANCIA" | descargo=="TECNICO EN SEGURIDAD" | descargo=="TECNICO EN SEGURIDAD I" | descargo=="TECNICO EN SEGURIDAD II" | descargo=="CHOFER" | descargo=="CHOFER I" | descargo=="CHOFER II" | descargo=="CHOFER III" | descargo=="PERSONAL DE SEGURIDAD RESIDENCIAS"
+gen pers_vigilancia = plaza_administrativa==9
+gen pers_vigilancia_n=1==(pers_vigilancia==1 & sitlab == "N")
+gen pers_vigilancia_c=pers_vigilancia_n==0 & plaza_administrativa==9
+
+*Definir nombres en un label
+label define plaza_administrativa 1 "Psicologo" 2 "Coordinador Administrativo IE" 3 "Secretaria" 4 "Auxiliar de biblioteca" 5 "Auxilar de laboratorio" 5 "Auxiliar de laboratorio" 6 "Auxiliar en soporte informático" 7 "Oficinista" 8 "Trabajador de limpieza y mantenimiento" 9 "Personal de vigilancia"
+
+label values plaza_administrativa plaza_administrativa
+
+gen anio = year(fecnac)
+local pea_adm "psicologo coord_adm_ie secretario aux_biblioteca aux_laboratorio aux_sistemas oficinista pers_limp_mant pers_vigilancia "
+foreach x of local pea_adm {
+    gen edad_`x'_n = 2021 - anio if `x'_n==1
+	replace edad_`x'_n = 65 if edad_`x'_n >65 & !mi(edad_`x'_n) 
+}
+sum edad_*
+
+collapse (rawsum) psicologo* coord_adm_ie* secretario* aux_biblioteca* aux_laboratorio* aux_sistemas* oficinista* pers_limp_mant* pers_vigilancia* (mean) edad_* (firstnm) descreg nombreooii descniveduc nivel, by(codmod)
+
+rename codmod cod_mod
+gen anexo="0"
+
+tempfile nexus
+save `nexus', replace
+
+/*------------------------------------------------------------------------------
+								III) SIAGIE					
+------------------------------------------------------------------------------*/
+
+*-Matricula y secciones actual
+	
+import excel using "$siagie\SIAGIE - matrícula 2020 grados secciones 01 diciembre.xlsx", cellrange(K1:Z552892) clear first
+
+	*Estandarizacion de la base
+ren *, l
+ren (codigomodular total nroalumnosinclusivos) (cod_mod alum inlcusivo)
+
+	*Revision de inconsistencias
+replace cod_mod = "0"*(7-length(cod_mod))+cod_mod
+
+duplicates tag cod_mod anexo id_grado id_seccion, g(du)
+assert du==0
+
+destring alum inlcusivo, replace ignore("NULL")
+
+	*Construccion de variables
+g grado=.
+replace grado=1 if strpos(dsc_grado,"2") & strpos(dsc_nivel,"Inicial")
+replace grado=2 if strpos(dsc_grado,"3") & strpos(dsc_nivel,"Inicial")
+replace grado=3 if strpos(dsc_grado,"4") & strpos(dsc_nivel,"Inicial")
+replace grado=4 if strpos(dsc_grado,"5") & strpos(dsc_nivel,"Inicial")
+
+replace grado=5 if strpos(dsc_grado,"PRIMERO") & strpos(dsc_nivel,"Primaria")
+replace grado=6 if strpos(dsc_grado,"SEGUNDO") & strpos(dsc_nivel,"Primaria")
+replace grado=7 if strpos(dsc_grado,"TERCERO") & strpos(dsc_nivel,"Primaria")
+replace grado=8 if strpos(dsc_grado,"CUARTO") & strpos(dsc_nivel,"Primaria")
+replace grado=9 if strpos(dsc_grado,"QUINTO") & strpos(dsc_nivel,"Primaria")
+replace grado=10 if strpos(dsc_grado,"SEXTO") & strpos(dsc_nivel,"Primaria")
+
+replace grado=11 if strpos(dsc_grado,"PRIMERO") & strpos(dsc_nivel,"Secundaria")
+replace grado=12 if strpos(dsc_grado,"SEGUNDO") & strpos(dsc_nivel,"Secundaria")
+replace grado=13 if strpos(dsc_grado,"TERCERO") & strpos(dsc_nivel,"Secundaria")
+replace grado=14 if strpos(dsc_grado,"CUARTO") & strpos(dsc_nivel,"Secundaria")
+replace grado=15 if strpos(dsc_grado,"QUINTO") & strpos(dsc_nivel,"Secundaria")
+
+gen nivel_servicio = "inicial" if grado>=1 & grado<=4
+replace nivel_servicio = "primaria" if grado>=5 & grado<=10
+replace nivel_servicio = "secundaria" if grado>=11
+
+greshape wide alum inlcusivo, i(cod_mod anexo id_grado id_seccion nivel_servicio) j(grado)
+
+foreach x in alum inlcusivo {
+
+	gen cant0_`x' = `x'1
+	egen cant1_`x' = rowtotal(`x'2 `x'5 `x'11)
+	egen cant2_`x' = rowtotal(`x'3 `x'6 `x'12)
+	egen cant3_`x' = rowtotal(`x'4 `x'7 `x'13)
+	egen cant4_`x' = rowtotal(`x'8 `x'14)
+	egen cant5_`x' = rowtotal(`x'9 `x'15)
+	gen cant6_`x' = `x'10
+	
+	egen cant_`x' = rowtotal(`x'*)
+}
+
+destring id_seccion, replace
+replace id_seccion=1 if id_seccion==.
+
+gen num_secc_cuna=1 if strpos(dsc_grado,"0 a 2 años") 
+mvencode num_secc_cuna, mv(0)
+
+gen num_secc0=1 if strpos(id_grado,"01")
+gen num_secc1=1 if strpos(id_grado,"02") | strpos(id_grado,"05") | strpos(id_grado,"11")
+gen num_secc2=1 if strpos(id_grado,"03") | strpos(id_grado,"06") | strpos(id_grado,"12")
+gen num_secc3=1 if strpos(id_grado,"04") | strpos(id_grado,"07") | strpos(id_grado,"13")
+gen num_secc4=1 if strpos(id_grado,"08") | strpos(id_grado,"14") 
+gen num_secc5=1 if strpos(id_grado,"09") | strpos(id_grado,"15")
+gen num_secc6=1 if strpos(id_grado,"10")
+
+egen num_secc_total = rowtotal(num_secc0 num_secc1 num_secc2 num_secc3 num_secc4 num_secc5 num_secc6)
+
+gcollapse (rawsum) cant* num_secc* , by(cod_mod anexo)
+
+ren * *_2020
+ren (cod_mod_2020 anexo_2020) (cod_mod anexo)
+
+label var cod_mod "codigo modular"
+label var anexo "anexo"
+
+tempfile siagie_avance
+save `siagie_avance', replace
+
+/*Consolidacionn de bases*/
+use "$padrongg1\Padron GG1", clear
+
+/*Filtros relevantes*/
+keep if d_estado == "Activa" & (niv_mod=="A1" | niv_mod=="A2" | niv_mod=="A3" | niv_mod=="B0" | niv_mod=="F0") & gestion=="1" & ges_dep=="A1"
+drop if mi(codlocal)
+
+destring codooii, replace
+drop if strpos(cen_edu, "COAR ") | cen_edu == "COLEGIO MAYOR SECUNDARIO PRESIDENTE DEL PERU"
+
+merge 1:1 cod_mod anexo using `nexus', keep(1 3) nogen
+merge 1:1 cod_mod anexo using `pc', keep(1 3) nogen
+merge m:1 codlocal using `bl', keep(1 3) nogen
+merge 1:1 cod_mod anexo using `siagie_avance', keep(1 3) nogen
+
+/*Variables importantes*/
+
+gen secundaria=1 if niv_mod=="F0" // Sirve para un criterio de asignación de psicologo
+gen inicial =1 if strpos(niv_mod, "A")
+
+sort codlocal niv_mod
+by codlocal: gen id=_n
+duplicates tag codlocal, gen(integracion)
+
+bys codloc (cod_mod): g turno_local = d_cod_tur[1] + " " + d_cod_tur[2]  + " " + d_cod_tur[3] + " " +d_cod_tur[4] + " " +d_cod_tur[5]
+ 
+gen turno = 3 if (strpos(turno_local,"Mañana") & strpos(turno_local,"Tarde") & strpos(turno_local,"Noche"))
+replace turno = 2 if (strpos(turno_local,"Mañana") & strpos(turno_local,"Tarde")) | (strpos(turno_local,"Mañana") & strpos(turno_local,"Noche")) | (strpos(turno_local,"Tarde") & strpos(turno_local,"Noche")) & turno==.
+ replace turno = 1 if turno==.
+
+collapse (rawsum) inicial psicologo* coord_adm_ie* secretario* aux_biblioteca* aux_laboratorio* aux_sistemas* oficinista* pers_limp_mant* pers_vigilancia* cant_alum_2020 talumno tseccion secundaria redes jec_2020 cant_pc (max) integracion biblio_op laboratorio (firstnm) codooii turno d_dpto d_prov d_dist ubigeo caso_covid rural_upp_2020 nombreooii gestion d_gestion ges_dep d_ges_dep (mean) edad_*, by(codlocal)
+
+merge m:1 codooii using "$nexus\Relación de UGEL 2021", keep(1 3) nogen
+
+*Clasificacion DIGC
+gen clas_digc = 1 if cant_alum_2020<=60
+replace clas_digc = 2 if cant_alum_2020>60 & cant_alum_2020<=140
+replace clas_digc = 3 if cant_alum_2020>140 & cant_alum_2020<=657
+replace clas_digc = 4 if cant_alum_2020>657
+
+label define clas_digc 1 "Micro" 2 "Pequeña" 3 "Mediana" 4 "Grande"
+label val clas_digc clas_digc
+
+save "Resultados\Base administrativos", replace
