@@ -232,7 +232,7 @@ gen turno = 3 if (strpos(turno_local,"Mañana") & strpos(turno_local,"Tarde") & 
 replace turno = 2 if (strpos(turno_local,"Mañana") & strpos(turno_local,"Tarde")) | (strpos(turno_local,"Mañana") & strpos(turno_local,"Noche")) | (strpos(turno_local,"Tarde") & strpos(turno_local,"Noche")) & turno==.
  replace turno = 1 if turno==.
 
-collapse (rawsum) inicial psicologo* coord_adm_ie* secretario* aux_biblioteca* aux_laboratorio* aux_sistemas* oficinista* pers_limp_mant* pers_vigilancia* cant_total_2021 talumno tseccion secundaria redes jec_2020 /*cant_pc*/ (max) integracion /*biblio_op laboratorio*/ (firstnm) codooii turno d_dpto d_prov d_dist ubigeo /*caso_covid*/ rural_upp_2021 nombreooii gestion d_gestion ges_dep d_ges_dep (mean) edad_*, by(codlocal)
+collapse (rawsum) inicial psicologo* coord_adm_ie* secretario* aux_biblioteca* aux_laboratorio* aux_sistemas* oficinista* pers_limp_mant* pers_vigilancia* cant_total_2021 talumno tseccion secundaria redes jec_2020 /*cant_pc*/ (max) integracion /*biblio_op laboratorio*/ (firstnm) region pliego codue unidadejecutora tipo_entidad nombentidad codooii turno d_dpto d_prov d_dist ubigeo /*caso_covid*/ rural_upp_2021 nombreooii gestion d_gestion ges_dep d_ges_dep (mean) edad_*, by(codlocal)
 
 *Clasificacion DIGC
 gen clas_digc = 1 if cant_total_2021<=60

@@ -91,7 +91,7 @@ Personal requerido:
 *3.5) Personal de vigilancia
 	replace opt_pers_vigilancia = turno if clas_digc==4
 	replace opt_pers_vigilancia = opt_pers_vigilancia + 1 if inicial!=0 & clas_digc==4 
-exit
+
 /*------------------------------------------------------------------------------
 					IV) Locales con equipamiento
 ------------------------------------------------------------------------------*/
@@ -126,9 +126,9 @@ foreach x in coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario /
 }
 drop gestion d_gestion ges_dep d_ges_dep  talumno tseccion
 
-order codlocal nombreooii d_dpto d_prov d_dist ubigeo region pliego codue unidadejecutora nombentidad codooii tipo_entidad clas_digc clas_digc cant_total_2021 - cant_pc biblio_op laboratorio turno caso_covid integracion edad* rural_upp_2020 //Datos generales
+order codlocal nombreooii d_dpto d_prov d_dist ubigeo region pliego codue unidadejecutora nombentidad codooii tipo_entidad clas_digc clas_digc cant_total_2021 redes jec_2020 turno integracion rural_upp_2021 //Datos generales
 
-order coord_adm_ie_n oficinista_n pers_limp_mant_n pers_vigilancia_n secretario_n /*aux_biblioteca_n aux_laboratorio_n aux_sistemas_n*/, after(rural_upp_2020) //Datos de personal actual nombrado
+order coord_adm_ie_n oficinista_n pers_limp_mant_n pers_vigilancia_n secretario_n /*aux_biblioteca_n aux_laboratorio_n aux_sistemas_n*/, after(rural_upp_2021) //Datos de personal actual nombrado
 
 foreach x in coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario /*aux_biblioteca aux_laboratorio aux_sistemas*/ {
 	order `x'_c, after(`x'_n) //Datos de personal contratado
@@ -139,7 +139,6 @@ order coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario /*aux_bi
 order opt_coord_adm_ie opt_oficinista opt_pers_limp_mant opt_pers_vigilancia opt_secretario /*opt_aux_biblioteca opt_aux_laboratorio opt_aux_sistemas*/, after(secretario) // Datos del personal optimo
 
 order exd_coord_adm_ie exd_oficinista exd_pers_limp_mant exd_pers_vigilancia exd_secretario /*exd_aux_biblioteca exd_aux_laboratorio  exd_aux_sistemas*/, after(opt_secretario) //Datos de la brecha excedente
-
 foreach x in coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario /*aux_biblioteca aux_laboratorio  aux_sistemas*/  {
 	order req_`x', after(exd_`x') //Datos de la brecha requerido
 }
@@ -171,19 +170,23 @@ foreach x in coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario /
 	gen costo_brecha_`x' = ceil(salario_`x')*req_`x'
 }
 
-drop salario_*
+drop salario_* 
 
-order costo_actual_coord_adm_ie costo_actual_oficinista costo_actual_pers_limp_mant costo_actual_pers_vigilancia costo_actual_secretario /*costo_actual_aux_biblioteca costo_actual_aux_laboratorio costo_actual_aux_sistemas*/, after(req_secretario) //Costo actual
+*Variables a presentar
+global datos_generales "codlocal nombreooii	d_dpto d_prov d_dist ubigeo region pliego codue	unidadejecutora	nombentidad	codooii	tipo_entidad clas_digc	cant_total_2021	redes jec_2020 turno integracion rural_upp_2021"
+global personal_existente "coord_adm_ie_n coord_adm_ie_c oficinista_n oficinista_c pers_limp_mant_n pers_limp_mant_c pers_vigilancia_n pers_vigilancia_c secretario_n secretario_c coord_adm_ie	oficinista	pers_limp_mant	pers_vigilancia	secretario"
+global personal_optimo "opt_coord_adm_ie opt_oficinista	opt_pers_limp_mant opt_pers_vigilancia opt_secretario"
+global brecha "exd_coord_adm_ie req_coord_adm_ie exd_oficinista req_oficinista	exd_pers_limp_mant req_pers_limp_mant	exd_pers_vigilancia	req_pers_vigilancia	exd_secretario req_secretario" 
+global costo_actual "costo_actual_coord_adm_ie costo_actual_oficinista costo_actual_pers_limp_mant costo_actual_pers_vigilancia	costo_actual_secretario"
+global costo_optimo "costo_opt_coord_adm_ie costo_opt_oficinista costo_opt_pers_limp_mant costo_opt_pers_vigilancia costo_opt_secretario" 
+global costo_req "costo_brecha_coord_adm_ie costo_brecha_oficinista costo_brecha_pers_limp_mant costo_brecha_pers_vigilancia	costo_brecha_secretario" 
 
-order costo_opt_coord_adm_ie costo_opt_oficinista costo_opt_pers_limp_mant costo_opt_pers_vigilancia costo_opt_secretario /*costo_opt_aux_biblioteca costo_opt_aux_laboratorio costo_opt_aux_sistemas*/, after(costo_actual_secretario) // Costo optimo
+hashsort region d_prov d_dist
+order ${datos_generales} ${personal_existente} ${personal_optimo} ${brecha} ${costo_actual} ${costo_optimo} ${costo_req}
 
-order costo_brecha_coord_adm_ie costo_brecha_oficinista costo_brecha_pers_limp_mant costo_brecha_pers_vigilancia costo_brecha_secretario /*costo_brecha_aux_biblioteca costo_brecha_aux_laboratorio costo_brecha_aux_sistemas*/, after(costo_opt_secretario) //Costo brecha
-
-hashsort d_dpto d_prov d_dist
-
-export excel using "Brecha personal administrativo.xlsx", sheet("Resultados ie", modify) cell(A4)  firstrow(variable)
+export excel ${datos_generales} ${personal_existente} ${personal_optimo} ${brecha} ${costo_actual} ${costo_optimo} ${costo_req} using "Resultados\Brecha personal administrativo.xlsx", sheet("Resultados ie", modify) cell(A4)  firstrow(variable)
 save "Resultados\Brecha con costo", replace
-
+exit
 /*------------------------------------------------------------------------------
 
 					Costeo de la Brecha con movimiento
