@@ -163,7 +163,7 @@ global sueldo_pers_vigilancia "1150"
 
 foreach x in coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario /*aux_biblioteca aux_laboratorio aux_sistemas*/ {
   
-    gen salario_`x' = 12*${sueldo_`x'} + 600 + 12*min(${sueldo_`x'}*0.09,4400*0.55*0.09)
+    gen salario_`x' = 12*${sueldo_`x'} + 600 + 12*min(${sueldo_`x'}*0.09,4500*0.55*0.09)
   
 	gen costo_actual_`x' = ceil(salario_`x')*`x'
 	gen costo_opt_`x' = ceil(salario_`x')* opt_`x'  
