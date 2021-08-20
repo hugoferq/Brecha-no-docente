@@ -1,9 +1,9 @@
 /*------------------------------------------------------------------------------
 
-Proyecto: 									Cierre de brecha de administrativos
-Autor: 										Hugo Fernandez y Carlos Ramirez 
+Proyecto: 									Brecha de administrativos
+Autor: 										Hugo Fernandez - Carlos Ramirez 
 											UPP-Minedu
-Ultima fecha de modificación:				05/05/2021
+Ultima fecha de modificación:				19/08/2021
 Outputs:									Calculo de la brecha del personal 
 											administrativo y su costo
 											
@@ -13,8 +13,8 @@ clear all
 set more off
 
 *Set paths
-global work "D:\OneDrive\Trabajo\Minedu\Brecha de administrativos"
-global dataminedu "D:\OneDrive\Bases de datos\Minedu"
+global work "D:\Brecha-no-docente"
+global data "D:\OneDrive\Bases de datos\Minedu compartido"
 cd "$work"
 
 /*----------------------------------------------------------------------------*/
@@ -52,63 +52,70 @@ tab tipo_fin dupli
 tab tipo_fin dupli
 
 end
+
 /*==============================================================================
-								0) Revisando la propuesta de DIGC
+	Focalizacion 1: Dar 1 personal de limpieza a los locales que no tienen 
+--------------------------------------------------------------------------------
+
+1) Inlcuyo personal de limpieza y mantenimiento de otras modalidades
+2) Identifico a los locales de EBR con mas de 140 alumnos
+3) Costeo
+
 ==============================================================================*/
 
-use "$dataminedu\Nexus\2021\nexus_18sira", clear
+*1) Inlcuyo personal de limpieza y mantenimiento de otras modalidades
+ 
+use "$data\Nexus\2021\nexus_30sira", clear
 
-drop if sitlab == "P" | sitlab == "B" | sitlab == "X" | tiporegistro== "REEMPLAZO" | strpos(estplaza,"BLOQ")
+drop if /*sitlab == "P" | sitlab == "X" |*/ sitlab == "B" | tiporegistro== "REEMPLAZO" | strpos(estplaza,"BLOQ") //Plazas que no son relevantes para este analisis
+
+keep if strpos(nivel, "E.B.A.") | strpos(nivel, "E.B.R.") | strpos(nivel, "ESPECIAL")
+
 plazaunica
 
-g pers_limp_mant = .
-g pers_limp_mant_cas = .
-g pers_limp_mant_276 = .
-*Trabajador de limpieza y mantenimiento
+g pers_limp_mant = 0
+
 tokenize `""TRABAJADOR DE SERVICIO" "TRABAJADOR DE SERVICIO I" "TRABAJADOR DE SERVICIO II" "TRABAJADOR DE SERVICIO III" "ARTESANO" "ARTESANO III" "SUPERVISOR DE CONSERVACION Y SERVICIOS" "SUPERVISOR DE CONSERVACION Y SERVICIOS I" "SUPERVISOR DE CONSERVACION Y SERVICIOS II" "PERSONAL DE MANTENIMIENTO" "ARTESANO I" "ARTESANO II" "ELECTRICISTA""'
 foreach x of numlist 1(1)13 {
 	replace pers_limp_mant = 1 if descargo == "``x''" 
-	replace pers_limp_mant_cas = 1 if descargo == "``x''"  & real(codtipotrab)==40
-	replace pers_limp_mant_276 = 1 if descargo == "``x''"  & real(codtipotrab)==20
 } 
+
 gen pers_limp_mant_n=1==(pers_limp_mant==1 & sitlab == "N")
-gen pers_limp_mant_c=pers_limp_mant_n==0 & pers_limp_mant==1
+gen pers_limp_mant_c=pers_limp_mant_n==0 
 
-keep if strpos( nivel , "E.B.R.")
-collapse (sum) pers_limp_mant*, by(codmod)
+collapse (sum) pers_limp_mant_exp = pers_limp_mant, by(codmod)
 ren codmod cod_mod
-g anexo = "0"
+merge 1:m cod_mod using "$data\Padron GG1", keep(3)
+collapse (sum) pers_limp_mant_exp = pers_limp_mant, by(codlocal)
 
-merge 1:1 cod_mod anexo using "D:\G drive\Bases de datos\Minedu\Padron GG1\Clean\Padron GG1", keep(3) nogen keepusing(codlocal d_gestion d_ges_dep)
+tempfile limpieza_exp
+save `limpieza_exp'
 
-collapse (sum) pers_limp_mant* (first) d_gestion d_ges_dep, by(codlocal)
+*2) Identifico a los locales de EBR con mas de 140 alumnos
+use "Resultados\Base administrativos", clear
+keep if clas_digc >=3
+merge 1:1 codlocal using `limpieza_exp', keep(3)
 
-tempfile pea_actual
-save `pea_actual'
+keep if pers_limp_mant == 0 | pers_limp_mant_exp == 0 
 
-* Focalizacion de DIGC
-import excel using "Bases de datos\20210427_195043_2_DIF_PxQ_Absorcion_2022.xlsx", sheet("Padrón codlocal") firstrow clear
+*3) Costeo
 
-merge 1:1 codlocal using `pea_actual', keep(1 3)
+global sueldo_pers_limp_mant "1150"  
+gen salario_pers_limp_mant = 12*${sueldo_pers_limp_mant} + 600 + 12*min(${sueldo_pers_limp_mant}*0.09,4500*0.55*0.09)
+gen costo_pers_limp_mant_foc = ceil(salario_pers_limp_mant)
 
-tab PEAS pers_limp_mant
-tab PEAS pers_limp_mant_cas
-tab PEAS pers_limp_mant_276
-tab PEAS 
+tabstat costo_pers_limp_mant , stat(sum) format(%-12.0fc)
 
-g observacion = "Ya tienen personal" if pers_limp_mant>=1
-export excel using "Resultados\Verificacion de focalizacion.xlsx" if observacion == "Ya tienen personal", sheet("DIF", modify) first(variable)
-exit
+*Variables a presentar
+global datos_generales "codlocal nombreooii	d_dpto d_prov d_dist ubigeo region pliego codue	unidadejecutora	nombentidad	codooii	tipo_entidad clas_digc	cant_total_2021	redes jec_2020 turno integracion rural_upp_2021"
+global personal_existente "coord_adm_ie_n coord_adm_ie_c oficinista_n oficinista_c pers_limp_mant_n pers_limp_mant_c pers_vigilancia_n pers_vigilancia_c secretario_n secretario_c coord_adm_ie	oficinista	pers_limp_mant	pers_vigilancia	secretario"
+global personal_optimo "opt_coord_adm_ie opt_oficinista	opt_pers_limp_mant opt_pers_vigilancia opt_secretario"
+global brecha "exd_coord_adm_ie req_coord_adm_ie exd_oficinista req_oficinista	exd_pers_limp_mant req_pers_limp_mant	exd_pers_vigilancia	req_pers_vigilancia	exd_secretario req_secretario" 
+global costo_actual "costo_actual_coord_adm_ie costo_actual_oficinista costo_actual_pers_limp_mant costo_actual_pers_vigilancia	costo_actual_secretario"
+global costo_optimo "costo_opt_coord_adm_ie costo_opt_oficinista costo_opt_pers_limp_mant costo_opt_pers_vigilancia costo_opt_secretario" 
+global costo_req "costo_brecha_pers_limp_mant" 
 
+hashsort region d_prov d_dist
+order ${datos_generales} costo_pers_limp_mant_foc
 
-use "Resultados\Brecha con costo", clear
-drop if mi(descreg)
-hashsort descreg d_prov d_dist
-
-*Focalizacion
-	keep if rural_upp_2020 == 500 | rural_upp_2020 == 100 
-	keep if caso_covid<=10 
-
-export excel using ".xlsx", sheet("Focalizado", modify) cell(A3)  firstrow(variable)
-
-
+export excel ${datos_generales} costo_pers_limp_mant_foc using "Resultados\Brecha personal administrativo.xlsx", sheet("Focalizacion Limpieza", modify) cell(A1)  firstrow(variable)
