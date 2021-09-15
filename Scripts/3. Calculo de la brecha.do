@@ -186,7 +186,7 @@ order ${datos_generales} ${personal_existente} ${personal_optimo} ${brecha} ${co
 
 export excel ${datos_generales} ${personal_existente} ${personal_optimo} ${brecha} ${costo_actual} ${costo_optimo} ${costo_req} using "Resultados\Brecha personal administrativo.xlsx", sheet("Resultados ie", modify) cell(A4)  firstrow(variable)
 save "Resultados\Brecha con costo", replace
-exit
+
 /*------------------------------------------------------------------------------
 
 					Costeo de la Brecha con movimiento
@@ -195,83 +195,16 @@ exit
 
 use "Resultados\Brecha con costo", clear
 
-g mediana = clas_digc==3
-g grande = clas_digc==4
+keep region pliego codue unidadejecutora tipo_entidad nombentidad codooii  pers_limp_mant pers_limp_mant_c pers_limp_mant_n req_pers_vigilancia exd_pers_limp_mant
 
-local pea_adm "coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario"
-collapse (sum) mediana grande cant_total_2021 coord_adm_ie* oficinista* pers_limp_mant* pers_vigilancia* secretario* exd_* req_* costo_brecha_* (mean) edad*, by(region nombreooii)
+egen exd_pers_limp_mant_c = rowmin(exd_pers_limp_mant pers_limp_mant_c)
+g exd_pers_limp_mant_n = exd_pers_limp_mant - exd_pers_limp_mant_c 
 
-foreach x of local pea_adm {
-	*Anios para jubilarse de un nombrado	
-		g jubilacion_`x' = 65 - edad_`x' 
-		
-	* Supuesto de que la mayor parte de los exd son los nombrados
-		egen exd_`x'_n = rowmin(exd_`x' `x'_n)
-		gen exd_`x'_c = exd_`x' - exd_`x'_n
-	
-	* Los nombrados excedentes cubren los requerimientos en la ugel
-		gen brecha_`x' = req_`x' - exd_`x'	
-		
-}
+collapse (sum) exd_pers_limp_mant_n exd_pers_limp_mant exd_pers_limp_mant_c req_pers_vigilancia , by(region pliego nombentidad codooii)
 
-collapse (rawsum) mediana grande cant_total_2021 coord_adm_ie* oficinista* pers_limp_mant* pers_vigilancia* secretario* exd_* req_* brecha_* costo_brecha_* (mean) jubilacion_*, by(region)
+* Brecha con nombrados que no se puden mover
+g brecha_ugel= (exd_pers_limp_mant_c) - req_pers_vigilancia
 
-*Anado DS 238
+collapse (sum) exd_pers_limp_mant_n exd_pers_limp_mant exd_pers_limp_mant_c req_pers_vigilancia brecha_ugel , by(region pliego)
 
-preserve
-	use "$data\BD absorcion final", clear
-	ren región_ region
-	collapse (sum) ds238_oficinista=req_oficinista ds238_coord_adm_ie=req_coordinador ds238_secretario=req_secretario, by(region)
-	
-	foreach x in pers_limp_mant pers_vigilancia  {
-		g ds238_`x' = 0 	
-	}
-
-	tempfile ds238
-	save `ds238'
-restore
-
-merge 1:1 region using `ds238', nogen
-
-foreach x of local pea_adm {
-	
-	*Costo per capita
-	g costo_unit_`x' =  costo_brecha_`x' / req_`x'
-	drop costo_brecha_`x'
-	
-	* Brecha para financiar 
-	gen brecha_f_`x' = brecha_`x' if brecha_`x'>0
-	replace brecha_f_`x' = 0 if mi(brecha_f_`x')
-
-	* Costo de la brecha a financiar
-	gen costo_brecha_`x' =  brecha_f_`x'*costo_unit_`x'
-	
-	* Financiamiento del DS 238
-	gen costo_ds_`x' = ds238_`x'*costo_unit_`x'
-	
-	* Brecha con financiamiento de DS 238
-	gen brecha_ds_`x' = brecha_f_`x' - ds238_`x' 
-	replace brecha_ds_`x' = 0 if mi(brecha_ds_`x') | brecha_ds_`x'<=0
-	
-	* Costo de la brecha con descuento DS 238
-	gen costo_brecha_ds_`x' =  brecha_ds_`x'*costo_unit_`x'
-	
-}
-
-foreach x of local pea_adm {
-	
-	preserve
-		order region mediana grande cant_total_2021 jubilacion_`x' `x'_n `x'_c `x' exd_`x'_n exd_`x'_c exd_`x' req_`x' brecha_`x' costo_unit_`x' costo_brecha_`x' ds238_`x' costo_ds_`x' brecha_ds_`x' costo_brecha_ds_`x'
-		
-		keep region mediana grande cant_total_2021 jubilacion_`x' `x'_n `x'_c `x' exd_`x'_n exd_`x'_c exd_`x' req_`x' brecha_`x' costo_unit_`x' costo_brecha_`x' ds238_`x' costo_ds_`x' brecha_ds_`x' costo_brecha_ds_`x' 
-		
-		export excel using "Brecha adm con movimiento.xlsx", sheet("`x'", modify) cell(A3) first(variable)
-	restore
-
-}
-
-br region *pers_limp_mant*		
-tabstat costo_brecha_pers_limp_mant, stat(sum) format(%12.2fc)
-
-
-
+export excel using "Resultados\Brecha personal administrativo.xlsx", sheet("Brecha-Racio") first(variable)
