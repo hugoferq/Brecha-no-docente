@@ -54,7 +54,7 @@ Personal requerido:
 *2.3) Personal de limpieza y mantenimiento	
 	gen opt_pers_limp_mant = ceil(cant_total_2021/226) if clas_digc==3  
 	replace opt_pers_limp_mant = 16 if clas_digc==3 & opt_pers_limp_mant > 16
-	table opt_pers_limp_mant , c(min cant_total_2021  max cant_total_2021)
+	*table opt_pers_limp_mant , c(min cant_total_2021  max cant_total_2021)
 	
 *2.4) Personal de vigilancia
 	gen opt_pers_vigilancia = turno if clas_digc==3
@@ -86,7 +86,7 @@ Personal requerido:
 *3.4) Personal de limpieza y mantenimiento
 	replace opt_pers_limp_mant = ceil(cant_total_2021/226) if clas_digc==4  
 	replace opt_pers_limp_mant = 16 if clas_digc==4 & opt_pers_limp_mant > 16
-	table opt_pers_limp_mant , c(min cant_total_2021  max cant_total_2021)
+	*table opt_pers_limp_mant , c(min cant_total_2021  max cant_total_2021)
 		
 *3.5) Personal de vigilancia
 	replace opt_pers_vigilancia = turno if clas_digc==4
@@ -195,16 +195,16 @@ save "Resultados\Brecha con costo", replace
 
 use "Resultados\Brecha con costo", clear
 
-keep region pliego codue unidadejecutora tipo_entidad nombentidad codooii  pers_limp_mant pers_limp_mant_c pers_limp_mant_n req_pers_vigilancia exd_pers_limp_mant
+keep region pliego codue unidadejecutora tipo_entidad nombentidad codooii  pers_limp_mant pers_limp_mant_c pers_limp_mant_n req_pers_limp_mant exd_pers_limp_mant
 
 egen exd_pers_limp_mant_c = rowmin(exd_pers_limp_mant pers_limp_mant_c)
 g exd_pers_limp_mant_n = exd_pers_limp_mant - exd_pers_limp_mant_c 
 
-collapse (sum) exd_pers_limp_mant_n exd_pers_limp_mant exd_pers_limp_mant_c req_pers_vigilancia , by(region pliego nombentidad codooii)
+collapse (sum) exd_pers_limp_mant_n exd_pers_limp_mant exd_pers_limp_mant_c req_pers_limp_mant , by(region pliego nombentidad codooii)
 
 * Brecha con nombrados que no se puden mover
-g brecha_ugel= (exd_pers_limp_mant_c) - req_pers_vigilancia
+g brecha_ugel= (exd_pers_limp_mant_c) - req_pers_limp_mant
 
-collapse (sum) exd_pers_limp_mant_n exd_pers_limp_mant exd_pers_limp_mant_c req_pers_vigilancia brecha_ugel , by(region pliego)
+collapse (sum) exd_pers_limp_mant_n exd_pers_limp_mant exd_pers_limp_mant_c req_pers_limp_mant brecha_ugel , by(region pliego)
 
-export excel using "Resultados\Brecha personal administrativo.xlsx", sheet("Brecha-Racio") first(variable)
+export excel using "Resultados\Brecha personal administrativo.xlsx", sheet("Brecha-Racio", modify) first(variable)
