@@ -9,9 +9,15 @@ Brecha de personal de limpieza en
 ## Estructura de las carpetas
 
 ```markdown
-    ├── Documentos
-        ├── RVM 126-2020-MINEDU          <- Norma que establece los criterios de asignacion del perosnal no docente
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   ├── external       <- Data from third party sources.
+├── Documentos
+  ├── 'RVM 126-2020-MINEDU.pdf'  <- Establece los criterios de asignacion
+  ├── 'Equivalencias.xlsx'       <- Equivalencia de los antiguos cargos con los
+                                    actuales de la RVM 126-2020-Minedu
+├── Scripts
+  ├── 'Diagnostico de equivalencias.do'
+        ->Construye el excel 'Equivalencias.xlsx'
+  ├── 'Construccion de la base.do'
+  ├── 'Construccion de la base.do'
+
+├── external       <- Data from third party sources.
 ```

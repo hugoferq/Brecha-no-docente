@@ -151,8 +151,8 @@ tokenize `""Psicologo" "Coordinador Administrativo IE" "Secretario" "Auxiliar de
 foreach x of local equivalencias {
     di "-------------------- ``x'' --------------------"
     tab descargo new_sitlab if plaza_administrativa == `x'
-	tab2xl descargo new_sitlab using "Equivalencias.xlsx" if plaza_administrativa == `x' , col(1) row(1) sheet("``x''", replace)
+	tab2xl descargo new_sitlab using "Documentos\Equivalencias.xlsx" if plaza_administrativa == `x' , col(1) row(1) sheet("``x''", replace)
 }
  
-tab2xl descargo using "Equivalencias.xlsx" if mi(plaza_administrativa) & desctipotrab=="ADMINISTRATIVO" , col(1) row(1) sheet("Sin clasificacion", replace)
+tab2xl descargo using "Documentos\Equivalencias.xlsx" if mi(plaza_administrativa) & desctipotrab=="ADMINISTRATIVO" , col(1) row(1) sheet("Sin clasificacion", replace)
 
