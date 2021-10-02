@@ -47,7 +47,7 @@ Para la brecha de personal de limpieza y mantenimiento se evaluan 2 escenarios d
 
 Correr los siguientes Scripts y do files en el siguiente orden para replicar el proyecto:
 
-1) Diagnostico de equivalencias.do (Opcional)
+1) 'Diagnostico de equivalencias.do' (Opcional)
 2) 'Construccion de la base.do'
 3) 'Prediccion de personal.do' (Opcional)
 4) 'Calculo de la brecha.do'
