@@ -42,3 +42,14 @@ Para la brecha de personal de limpieza y mantenimiento se evaluan 2 escenarios d
         ├── UGEL con racio                    -> Brecha a nivel de UGEL con criterios de ordenamiento
         ├── Region con racio                  -> Brecha a nivel de región con criterios de ordenamiento
 ```
+
+## Pasos para replicar
+
+Correr los siguientes Scripts y do files en el siguiente orden para replicar el proyecto:
+
+1) Diagnostico de equivalencias.do (Opcional)
+2) 'Construccion de la base.do'
+3) 'Prediccion de personal.do' (Opcional)
+4) 'Calculo de la brecha.do'
+5) 'Focalizacion.do'
+6) 'Brecha de personal de limpieza.ipynb'
