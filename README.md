@@ -22,7 +22,7 @@ Para la brecha de personal de limpieza y mantenimiento se evaluan 2 escenarios d
   ├── 'Prediccion de personal.do'             -> Regresiones para determinar la asignacion del personal de limpieza
   ├── 'Calculo de la brecha.do'               -> Construye 'Brecha con costo.dta' y 'Brecha personal administrativo.xlsx'
   ├── 'Focalizacion.do'                       -> Construye la pestaña 'Focalizacion Limpieza' en 'Brecha personal administrativo.xlsx'
-  ├── 'Brecha de personal de limpieza.ipynb'  -> Construye 'Personal de limpieza.xlsx'
+  ├── 'Brechas de personal no docente.ipynb'  -> Construye 'Brecha no docente.xlsx'
 
 ├── Resultados
     ├── 'Base administrativos.dta'            -> Base a nivel de local educativo con el personal no docente actual
@@ -36,11 +36,9 @@ Para la brecha de personal de limpieza y mantenimiento se evaluan 2 escenarios d
         ├── Personal de limpieza              -> Brecha con costo del personal de limpieza sin criterios de ordenamiento
         ├── Focalizacion Limpieza             -> Base a nivel de local educativo de la Focalización del personal de limpieza
         ├── Brecha-Racio                      -> Brecha de personal de limpieza con ordenamiento a nivel de región
-    ├── 'Personal de limpieza.xlsx'
+    ├── 'Brecha no docente.xlsx'
         ├── UGEL sin racio                    -> Brecha a nivel de UGEL sin criterios de ordenamiento
-        ├── Region sin racio                  -> Brecha a nivel de región sin criterios de ordenamiento
         ├── UGEL con racio                    -> Brecha a nivel de UGEL con criterios de ordenamiento
-        ├── Region con racio                  -> Brecha a nivel de región con criterios de ordenamiento
 ```
 
 ## Pasos para replicar
@@ -52,4 +50,4 @@ Correr los siguientes Scripts y do files en el siguiente orden para replicar el 
 3) 'Prediccion de personal.do' (Opcional)
 4) 'Calculo de la brecha.do'
 5) 'Focalizacion.do'
-6) 'Brecha de personal de limpieza.ipynb'
+6) 'Brechas de personal no docente.ipynb'
