@@ -22,7 +22,7 @@ Para la brecha de personal de limpieza y mantenimiento se evaluan 2 escenarios d
   ├── 'Prediccion de personal.do'             -> Regresiones para determinar la asignacion del personal de limpieza
   ├── 'Calculo de la brecha.do'               -> Construye 'Brecha con costo.dta' y 'Brecha personal administrativo.xlsx'
   ├── 'Focalizacion.do'                       -> Construye la pestaña 'Focalizacion Limpieza' en 'Brecha personal administrativo.xlsx'
-  ├── 'Brecha de personal de limpieza.ipynb'  -> Construye 'Personal de limpieza.xlsx'
+  ├── 'Brechas de personal no docente.ipynb'  -> Construye 'Brecha no docente.xlsx'
 
 ├── Resultados
     ├── 'Base administrativos.dta'            -> Base a nivel de local educativo con el personal no docente actual
