@@ -7,7 +7,7 @@ Este repositorio analiza la brecha de personal no docente (administrativo) en lo
 4) Personal de Limpieza y Mantenimiento
 5) Personal de Vigilancia
 
-Para la brecha de personal de limpieza y mantenimiento se evaluan 2 escenarios de brecha con ordenamiento de plazas excedentes y un escenario de focalización
+Se evaluan 2 escenarios de brecha con ordenamiento de plazas excedentes y un escenario de focalización para el personal de limpieza
 
 ## Estructura de las carpetas
 
