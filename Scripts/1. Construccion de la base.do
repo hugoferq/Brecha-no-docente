@@ -98,7 +98,7 @@ Las categorias fueron definidas por DIGC-Minedu
 
 ------------------------------------------------------------------------------*/
 
-use "$data\Nexus\2021\nexus_30sira", clear
+use "$data\Nexus\2022\nexus_20sira", clear
 
 drop if /*sitlab == "P" | sitlab == "X" |*/ sitlab == "B" | tiporegistro== "REEMPLAZO" | strpos(estplaza,"BLOQ") //Plazas que no son relevantes para este analisis
 
@@ -226,13 +226,13 @@ sort codlocal niv_mod
 by codlocal: gen id=_n
 duplicates tag codlocal, gen(integracion)
 
-bys codloc (cod_mod): g turno_local = d_cod_tur[1] + " " + d_cod_tur[2]  + " " + d_cod_tur[3] + " " +d_cod_tur[4] + " " +d_cod_tur[5]
+bys codlocal (cod_mod): g turno_local = d_cod_tur[1] + " " + d_cod_tur[2]  + " " + d_cod_tur[3] + " " +d_cod_tur[4] + " " +d_cod_tur[5]
  
 gen turno = 3 if (strpos(turno_local,"Mañana") & strpos(turno_local,"Tarde") & strpos(turno_local,"Noche"))
 replace turno = 2 if (strpos(turno_local,"Mañana") & strpos(turno_local,"Tarde")) | (strpos(turno_local,"Mañana") & strpos(turno_local,"Noche")) | (strpos(turno_local,"Tarde") & strpos(turno_local,"Noche")) & turno==.
  replace turno = 1 if turno==.
 
-collapse (rawsum) inicial psicologo* coord_adm_ie* secretario* aux_biblioteca* aux_laboratorio* aux_sistemas* oficinista* pers_limp_mant* pers_vigilancia* cant_total_2021 talumno tseccion secundaria redes jec_2020 /*cant_pc*/ (max) integracion /*biblio_op laboratorio*/ (firstnm) region pliego codue unidadejecutora tipo_entidad nombentidad codooii turno d_dpto d_prov d_dist ubigeo /*caso_covid*/ rural_upp_2021 nombreooii gestion d_gestion ges_dep d_ges_dep (mean) edad_*, by(codlocal)
+collapse (rawsum) inicial psicologo* coord_adm_ie* secretario* aux_biblioteca* aux_laboratorio* aux_sistemas* oficinista* pers_limp_mant* pers_vigilancia* cant_total_2021 talumno tseccion secundaria redes jec_2020 /*cant_pc*/ (max) integracion /*biblio_op laboratorio*/ (firstnm) region pliego codue unidadejecutora /*tipo_entidad nombentidad*/ codooii turno d_dpto d_prov d_dist ubigeo /*caso_covid*/ rural_upp_2021 nombreooii gestion d_gestion ges_dep d_ges_dep (mean) edad_*, by(codlocal)
 
 *Clasificacion DIGC
 gen clas_digc = 1 if cant_total_2021<=60

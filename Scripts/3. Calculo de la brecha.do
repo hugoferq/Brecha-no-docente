@@ -126,7 +126,7 @@ foreach x in coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario /
 }
 drop gestion d_gestion ges_dep d_ges_dep  talumno tseccion
 
-order codlocal nombreooii d_dpto d_prov d_dist ubigeo region pliego codue unidadejecutora nombentidad codooii tipo_entidad clas_digc clas_digc cant_total_2021 redes jec_2020 turno integracion rural_upp_2021 //Datos generales
+order codlocal nombreooii d_dpto d_prov d_dist ubigeo region pliego codue unidadejecutora /*nombentidad*/ codooii /*tipo_entidad*/ clas_digc clas_digc cant_total_2021 redes jec_2020 turno integracion rural_upp_2021 //Datos generales
 
 order coord_adm_ie_n oficinista_n pers_limp_mant_n pers_vigilancia_n secretario_n /*aux_biblioteca_n aux_laboratorio_n aux_sistemas_n*/, after(rural_upp_2021) //Datos de personal actual nombrado
 
@@ -173,7 +173,7 @@ foreach x in coord_adm_ie oficinista pers_limp_mant pers_vigilancia secretario /
 drop salario_* 
 
 *Variables a presentar
-global datos_generales "codlocal nombreooii	d_dpto d_prov d_dist ubigeo region pliego codue	unidadejecutora	nombentidad	codooii	tipo_entidad clas_digc	cant_total_2021	redes jec_2020 turno integracion rural_upp_2021"
+global datos_generales "codlocal nombreooii	d_dpto d_prov d_dist ubigeo region pliego codue	unidadejecutora		codooii	clas_digc	cant_total_2021	redes jec_2020 turno integracion rural_upp_2021"
 global personal_existente "coord_adm_ie_n coord_adm_ie_c oficinista_n oficinista_c pers_limp_mant_n pers_limp_mant_c pers_vigilancia_n pers_vigilancia_c secretario_n secretario_c coord_adm_ie	oficinista	pers_limp_mant	pers_vigilancia	secretario"
 global personal_optimo "opt_coord_adm_ie opt_oficinista	opt_pers_limp_mant opt_pers_vigilancia opt_secretario"
 global brecha "exd_coord_adm_ie req_coord_adm_ie exd_oficinista req_oficinista	exd_pers_limp_mant req_pers_limp_mant	exd_pers_vigilancia	req_pers_vigilancia	exd_secretario req_secretario" 
@@ -195,12 +195,12 @@ save "Resultados\Brecha con costo", replace
 
 use "Resultados\Brecha con costo", clear
 
-keep region pliego codue unidadejecutora tipo_entidad nombentidad codooii  pers_limp_mant pers_limp_mant_c pers_limp_mant_n req_pers_limp_mant exd_pers_limp_mant
+keep region pliego codue unidadejecutora /*tipo_entidad nombentidad*/ codooii  pers_limp_mant pers_limp_mant_c pers_limp_mant_n req_pers_limp_mant exd_pers_limp_mant
 
 egen exd_pers_limp_mant_c = rowmin(exd_pers_limp_mant pers_limp_mant_c)
 g exd_pers_limp_mant_n = exd_pers_limp_mant - exd_pers_limp_mant_c 
 
-collapse (sum) exd_pers_limp_mant_n exd_pers_limp_mant exd_pers_limp_mant_c req_pers_limp_mant , by(region pliego nombentidad codooii)
+collapse (sum) exd_pers_limp_mant_n exd_pers_limp_mant exd_pers_limp_mant_c req_pers_limp_mant , by(region pliego /*nombentidad*/ codooii)
 
 * Brecha con nombrados que no se puden mover
 g brecha_ugel= (exd_pers_limp_mant_c) - req_pers_limp_mant
